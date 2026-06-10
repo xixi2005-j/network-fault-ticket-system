@@ -7,6 +7,10 @@
           <el-icon><DataAnalysis /></el-icon>
           <span>统计面板</span>
         </el-menu-item>
+        <el-menu-item v-if="userStore.isNormalUser" index="/my-tickets">
+          <el-icon><FolderOpened /></el-icon>
+          <span>我的工单</span>
+        </el-menu-item>
         <el-menu-item index="/tickets">
           <el-icon><Tickets /></el-icon>
           <span>工单列表</span>
@@ -68,6 +72,7 @@ const userStore = useUserStore()
 const currentTitle = computed(() => {
   const map: Record<string, string> = {
     '/dashboard': '统计面板',
+    '/my-tickets': '我的工单',
     '/tickets': '工单列表',
     '/tickets/create': '创建工单',
     '/admin/operations': '工单操作',
