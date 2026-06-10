@@ -1,5 +1,5 @@
 <template>
-  <el-card shadow="never">
+  <el-card shadow="never" class="table-card">
     <template #header>用户管理</template>
     <el-table :data="users" v-loading="loading" stripe>
       <el-table-column prop="id" label="ID" width="60" />
