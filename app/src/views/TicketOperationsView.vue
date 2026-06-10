@@ -47,62 +47,64 @@
                 <span class="meta-text">处理人：{{ ticket.assigneeName || '未指派' }}</span>
               </div>
             </div>
-            <div class="ticket-actions">
-              <el-button type="success" size="small" @click="handleStatus(ticket.id, 3)" :loading="statusId === ticket.id">标记完成</el-button>
-              <el-button type="info" size="small" @click="handleStatus(ticket.id, 4)" :loading="statusId === ticket.id">关闭</el-button>
-            </div>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
     <!-- 待审核工单 -->
-    <el-card shadow="hover" class="section-card" style="margin-top: 20px">
+    <el-card shadow="hover" class="table-card" style="margin-top: 20px">
       <template #header>
         <div class="section-header">
           <span>待审核工单</span>
           <el-tag type="warning" size="small">{{ reviewingTickets.length }}</el-tag>
         </div>
       </template>
-      <div v-if="reviewingTickets.length === 0" class="empty-tip">暂无待审核工单</div>
-      <el-table :data="reviewingTickets" stripe size="small">
-        <el-table-column prop="id" label="ID" width="60" />
+      <el-table :data="reviewingTickets" stripe>
+        <el-table-column label="ID" width="70">
+          <template #default="{ row }">{{ String(row.id).padStart(3, '0') }}</template>
+        </el-table-column>
         <el-table-column prop="title" label="标题" min-width="200">
           <template #default="{ row }">
-            <router-link :to="`/tickets/${row.id}`" class="ticket-title">{{ row.title }}</router-link>
+            <router-link :to="`/tickets/${row.id}`" class="link">{{ row.title }}</router-link>
           </template>
         </el-table-column>
         <el-table-column prop="categoryName" label="分类" width="100" />
         <el-table-column prop="assigneeName" label="处理人" width="100" />
         <el-table-column prop="updateTime" label="提交时间" width="170" />
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" size="small" @click="showReportDialog(row)">查看报告</el-button>
+            <el-button link type="primary" @click="showReportDialog(row)">
+              <el-icon :size="18"><Document /></el-icon>
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
+      <div v-if="reviewingTickets.length === 0" class="empty-tip">暂无待审核工单</div>
     </el-card>
 
     <!-- 已完成工单 -->
-    <el-card shadow="hover" class="section-card" style="margin-top: 20px">
+    <el-card shadow="hover" class="table-card" style="margin-top: 20px">
       <template #header>
         <div class="section-header">
           <span>已完成待验收</span>
           <el-tag type="success" size="small">{{ completedTickets.length }}</el-tag>
         </div>
       </template>
-      <div v-if="completedTickets.length === 0" class="empty-tip">暂无已完成待验收的工单</div>
-      <el-table :data="completedTickets" stripe size="small">
-        <el-table-column prop="id" label="ID" width="60" />
+      <el-table :data="completedTickets" stripe>
+        <el-table-column label="ID" width="70">
+          <template #default="{ row }">{{ String(row.id).padStart(3, '0') }}</template>
+        </el-table-column>
         <el-table-column prop="title" label="标题" min-width="200">
           <template #default="{ row }">
-            <router-link :to="`/tickets/${row.id}`" class="ticket-title">{{ row.title }}</router-link>
+            <router-link :to="`/tickets/${row.id}`" class="link">{{ row.title }}</router-link>
           </template>
         </el-table-column>
         <el-table-column prop="categoryName" label="分类" width="100" />
         <el-table-column prop="assigneeName" label="处理人" width="100" />
         <el-table-column prop="resolveTime" label="完成时间" width="170" />
       </el-table>
+      <div v-if="completedTickets.length === 0" class="empty-tip">暂无已完成待验收的工单</div>
     </el-card>
 
     <!-- 审核报告对话框 -->
@@ -112,7 +114,7 @@
           <el-descriptions-item label="报告人">{{ currentReport.reporterName }}</el-descriptions-item>
           <el-descriptions-item label="提交时间">{{ currentReport.createTime }}</el-descriptions-item>
           <el-descriptions-item label="状态" :span="2">
-            <el-tag :type="currentReport.status === 1 ? 'warning' : currentReport.status === 2 ? 'success' : 'danger'">
+            <el-tag :type="currentReport.status === 1 ? 'warning' : currentReport.status === 2 ? 'success' : 'danger'" effect="dark">
               {{ currentReport.statusText }}
             </el-tag>
           </el-descriptions-item>
@@ -120,7 +122,7 @@
           <el-descriptions-item label="耗时统计" :span="2">{{ currentReport.timeSpent || '未填写' }}</el-descriptions-item>
           <el-descriptions-item label="解决方案" :span="2">{{ currentReport.solution || '未填写' }}</el-descriptions-item>
           <el-descriptions-item v-if="currentReport.rejectReason" label="驳回原因" :span="2">
-            {{ currentReport.rejectReason }}
+            <span style="color: #f56c6c">{{ currentReport.rejectReason }}</span>
           </el-descriptions-item>
         </el-descriptions>
 
@@ -139,7 +141,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getTickets, assignTicket, changeTicketStatus } from '@/api/ticket'
+import { getTickets, assignTicket } from '@/api/ticket'
 import { getReportByTicketId, approveReport, rejectReport } from '@/api/report'
 import { getUsers } from '@/api/user'
 import type { TicketVO, UserVO, CompletionReportVO } from '@/types/api'
@@ -148,7 +150,6 @@ const allTickets = ref<TicketVO[]>([])
 const opsUsers = ref<UserVO[]>([])
 const assignMap = reactive<Record<number, number>>({})
 const assigningId = ref<number | null>(null)
-const statusId = ref<number | null>(null)
 
 const reportDialogVisible = ref(false)
 const currentReport = ref<CompletionReportVO | null>(null)
@@ -189,17 +190,6 @@ async function handleAssign(ticketId: number) {
     await loadTickets()
   } finally {
     assigningId.value = null
-  }
-}
-
-async function handleStatus(ticketId: number, status: number) {
-  statusId.value = ticketId
-  try {
-    await changeTicketStatus(ticketId, status)
-    ElMessage.success('状态变更成功')
-    await loadTickets()
-  } finally {
-    statusId.value = null
   }
 }
 
@@ -254,51 +244,72 @@ function priorityType(p: number) {
 .operations-page {
   height: 100%;
 }
+
 .section-card {
   height: 100%;
 }
+
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
+
 .empty-tip {
   text-align: center;
   color: #909399;
-  padding: 30px 0;
+  padding: 40px 0;
+  font-size: 14px;
 }
+
 .ticket-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
+  padding: 14px 0;
   border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s;
 }
+
 .ticket-item:last-child {
   border-bottom: none;
 }
+
+.ticket-item:hover {
+  background-color: #f5f7fa;
+  margin: 0 -20px;
+  padding: 14px 20px;
+  border-radius: 8px;
+}
+
 .ticket-info {
   flex: 1;
   min-width: 0;
 }
+
 .ticket-title {
   color: #303133;
   text-decoration: none;
   font-weight: 500;
+  font-size: 14px;
 }
+
 .ticket-title:hover {
   color: #409eff;
 }
+
 .ticket-meta {
-  margin-top: 6px;
+  margin-top: 8px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
 .meta-text {
-  font-size: 12px;
+  font-size: 13px;
   color: #909399;
 }
+
 .ticket-actions {
   display: flex;
   align-items: center;
@@ -306,16 +317,35 @@ function priorityType(p: number) {
   margin-left: 12px;
   flex-shrink: 0;
 }
+
+/* 表格卡片使用公共样式 */
+.table-card :deep(.el-table td.el-table__cell:nth-child(1)) {
+  text-align: center;
+}
+
 .report-content {
   margin-bottom: 20px;
 }
+
 .review-actions {
   margin-top: 20px;
 }
+
 .action-buttons {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
   margin-top: 16px;
+}
+
+/* 链接样式 */
+.link {
+  color: #409eff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link:hover {
+  text-decoration: underline;
 }
 </style>

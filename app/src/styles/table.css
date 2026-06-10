@@ -1,0 +1,94 @@
+/* 公共表格样式 - 统一工单列表风格 */
+
+/* 表格卡片容器 */
+.table-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+}
+
+.table-card :deep(.el-card__body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.table-card :deep(.el-table) {
+  flex: 1;
+  font-size: 14px;
+}
+
+/* 表格竖线 */
+.table-card :deep(.el-table th.el-table__cell),
+.table-card :deep(.el-table td.el-table__cell) {
+  border-right: 1px solid #ebeef5;
+}
+
+.table-card :deep(.el-table th.el-table__cell:last-child),
+.table-card :deep(.el-table td.el-table__cell:last-child) {
+  border-right: none;
+}
+
+/* 表头居中 */
+.table-card :deep(.el-table th.el-table__cell) {
+  text-align: center;
+  font-weight: 600;
+  color: #303133;
+  background-color: #f5f7fa;
+}
+
+/* 特定列居中 */
+.table-card :deep(.el-table td.el-table__cell:nth-child(1)), /* ID */
+.table-card :deep(.el-table td.el-table__cell:nth-child(4)), /* 分类 */
+.table-card :deep(.el-table td.el-table__cell:nth-child(5)), /* 优先级 */
+.table-card :deep(.el-table td.el-table__cell:nth-child(6))  /* 状态 */ {
+  text-align: center;
+}
+
+/* 链接样式 */
+.table-card .link {
+  color: #409eff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.table-card .link:hover {
+  text-decoration: underline;
+}
+
+/* 操作按钮 */
+.table-card :deep(.el-table .el-button) {
+  font-size: 18px;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.table-card :deep(.el-table .el-button:hover) {
+  background-color: #ecf5ff;
+}
+
+.table-card :deep(.el-table .el-button--danger:hover) {
+  background-color: #fef0f0;
+}
+
+.table-card :deep(.el-table .el-button.is-disabled) {
+  opacity: 0.4;
+}
+
+/* 空状态 */
+.empty-tip {
+  text-align: center;
+  color: #909399;
+  padding: 40px 0;
+  font-size: 14px;
+}
+
+/* 标签样式统一 */
+.table-card :deep(.el-tag) {
+  font-size: 13px;
+}
