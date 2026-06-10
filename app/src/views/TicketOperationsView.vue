@@ -47,6 +47,10 @@
                 <span class="meta-text">处理人：{{ ticket.assigneeName || '未指派' }}</span>
               </div>
             </div>
+            <div class="ticket-actions">
+              <el-button type="success" size="small" @click="handleStatus(ticket.id, 3)" :loading="statusId === ticket.id">标记完成</el-button>
+              <el-button type="info" size="small" @click="handleStatus(ticket.id, 4)" :loading="statusId === ticket.id">关闭</el-button>
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -135,7 +139,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getTickets, assignTicket } from '@/api/ticket'
+import { getTickets, assignTicket, changeTicketStatus } from '@/api/ticket'
 import { getReportByTicketId, approveReport, rejectReport } from '@/api/report'
 import { getUsers } from '@/api/user'
 import type { TicketVO, UserVO, CompletionReportVO } from '@/types/api'
@@ -144,17 +148,18 @@ const allTickets = ref<TicketVO[]>([])
 const opsUsers = ref<UserVO[]>([])
 const assignMap = reactive<Record<number, number>>({})
 const assigningId = ref<number | null>(null)
-
-const pendingTickets = computed(() => allTickets.value.filter(t => t.status === 1))
-const processingTickets = computed(() => allTickets.value.filter(t => t.status === 2))
-const reviewingTickets = computed(() => allTickets.value.filter(t => t.status === 3))
-const completedTickets = computed(() => allTickets.value.filter(t => t.status === 4))
+const statusId = ref<number | null>(null)
 
 const reportDialogVisible = ref(false)
 const currentReport = ref<CompletionReportVO | null>(null)
 const currentTicketId = ref<number | null>(null)
 const rejectReason = ref('')
 const reviewing = ref(false)
+
+const pendingTickets = computed(() => allTickets.value.filter(t => t.status === 1))
+const processingTickets = computed(() => allTickets.value.filter(t => t.status === 2))
+const reviewingTickets = computed(() => allTickets.value.filter(t => t.status === 3))
+const completedTickets = computed(() => allTickets.value.filter(t => t.status === 4))
 
 onMounted(async () => {
   await loadTickets()
@@ -184,6 +189,17 @@ async function handleAssign(ticketId: number) {
     await loadTickets()
   } finally {
     assigningId.value = null
+  }
+}
+
+async function handleStatus(ticketId: number, status: number) {
+  statusId.value = ticketId
+  try {
+    await changeTicketStatus(ticketId, status)
+    ElMessage.success('状态变更成功')
+    await loadTickets()
+  } finally {
+    statusId.value = null
   }
 }
 

@@ -1,42 +1,52 @@
 <template>
-  <div class="detail-page" v-if="ticket">
-    <!-- 工单信息卡片 -->
-    <el-card shadow="hover">
+  <div v-loading="loading">
+    <!-- 工单信息 -->
+    <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>工单信息</span>
-          <div class="header-actions">
-            <el-button @click="router.back()" size="small">返回</el-button>
-            <el-button v-if="canEdit" type="primary" size="small" @click="router.push(`/tickets/${ticket.id}/edit`)">编辑</el-button>
-          </div>
+          <span>{{ ticket.title }}</span>
+          <el-button type="primary" link @click="$router.push('/tickets')">← 返回列表</el-button>
         </div>
       </template>
       <el-descriptions :column="2" border>
-        <el-descriptions-item label="工单ID">{{ ticket.id }}</el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <el-tag :type="statusType(ticket.status)">{{ ticket.statusName }}</el-tag>
+        <el-descriptions-item label="分类">
+          <el-tag>{{ ticket.categoryName }}</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="标题" :span="2">{{ ticket.title }}</el-descriptions-item>
-        <el-descriptions-item label="分类">{{ ticket.categoryName }}</el-descriptions-item>
         <el-descriptions-item label="优先级">
           <el-tag :type="priorityType(ticket.priority)">{{ ticket.priorityName }}</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="问题描述" :span="2">{{ ticket.description || '无' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag :type="statusType(ticket.status)">{{ ticket.statusName }}</el-tag>
+        </el-descriptions-item>
         <el-descriptions-item label="创建人">{{ ticket.creatorName }}</el-descriptions-item>
         <el-descriptions-item label="处理人">{{ ticket.assigneeName || '未指派' }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ ticket.createTime }}</el-descriptions-item>
-        <el-descriptions-item label="更新时间">{{ ticket.updateTime }}</el-descriptions-item>
-        <el-descriptions-item v-if="ticket.resolveTime" label="解决时间">{{ ticket.resolveTime }}</el-descriptions-item>
-        <el-descriptions-item v-if="ticket.closeTime" label="关闭时间">{{ ticket.closeTime }}</el-descriptions-item>
-        <el-descriptions-item v-if="ticket.satisfaction" label="满意度" :span="2">
-          <el-rate :model-value="ticket.satisfaction" disabled show-score />
-          <div v-if="ticket.satisfactionComment" class="satisfaction-comment">{{ ticket.satisfactionComment }}</div>
+        <el-descriptions-item label="解决时间" :span="2">{{ ticket.resolveTime || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="问题描述" :span="2">
+          <div style="white-space: pre-wrap; min-height: 60px">{{ ticket.description || '无' }}</div>
         </el-descriptions-item>
       </el-descriptions>
     </el-card>
 
+    <!-- 评论区 -->
+    <el-card shadow="never" style="margin-top: 16px">
+      <template #header>评论记录</template>
+      <div v-if="comments.length === 0" style="color: #909399; text-align: center; padding: 20px">暂无评论</div>
+      <div v-for="item in comments" :key="item.id" class="comment-item">
+        <div class="comment-header">
+          <span class="comment-user">{{ item.realName || item.username }}</span>
+          <span class="comment-time">{{ item.createTime }}</span>
+        </div>
+        <div class="comment-content">{{ item.content }}</div>
+      </div>
+
+      <el-divider />
+      <el-input v-model="newComment" type="textarea" :rows="3" placeholder="输入评论内容..." />
+      <el-button type="primary" style="margin-top: 10px" @click="handleAddComment" :loading="commentLoading">发送评论</el-button>
+    </el-card>
+
     <!-- 完成报告卡片（如果有） -->
-    <el-card v-if="report" shadow="hover" style="margin-top: 20px">
+    <el-card v-if="report" shadow="never" style="margin-top: 16px">
       <template #header>
         <div class="card-header">
           <span>完成报告</span>
@@ -58,10 +68,8 @@
     </el-card>
 
     <!-- 用户操作卡片 -->
-    <el-card v-if="showUserActions" shadow="hover" style="margin-top: 20px">
-      <template #header>
-        <span>操作</span>
-      </template>
+    <el-card v-if="showUserActions" shadow="never" style="margin-top: 16px">
+      <template #header>操作</template>
       <div class="user-actions">
         <!-- 已完成状态：用户可以验收或重新打开 -->
         <template v-if="ticket.status === 4 && isCreator">
@@ -73,28 +81,6 @@
           <el-button v-if="!ticket.satisfaction" type="primary" @click="showRatingDialog = true">评价工单</el-button>
           <el-button type="warning" @click="showReopenDialog = true">重新打开</el-button>
         </template>
-      </div>
-    </el-card>
-
-    <!-- 评论区 -->
-    <el-card shadow="hover" style="margin-top: 20px">
-      <template #header>
-        <span>评论区</span>
-      </template>
-      <div class="comment-list">
-        <div v-for="comment in comments" :key="comment.id" class="comment-item">
-          <div class="comment-header">
-            <span class="comment-user">{{ comment.realName || comment.username }}</span>
-            <span class="comment-time">{{ comment.createTime }}</span>
-          </div>
-          <div class="comment-content">{{ comment.content }}</div>
-        </div>
-        <div v-if="comments.length === 0" class="empty-tip">暂无评论</div>
-      </div>
-      <el-divider />
-      <div class="comment-input">
-        <el-input v-model="newComment" type="textarea" :rows="3" placeholder="输入评论..." />
-        <el-button type="primary" style="margin-top: 10px" @click="handleAddComment" :loading="commenting">发表评论</el-button>
       </div>
     </el-card>
 
@@ -142,23 +128,23 @@ import type { TicketVO, CommentVO, CompletionReportVO } from '@/types/api'
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const loading = ref(false)
+const commentLoading = ref(false)
+const ticketId = Number(route.params.id)
 
-const ticket = ref<TicketVO | null>(null)
+const ticket = ref<TicketVO>({} as TicketVO)
 const report = ref<CompletionReportVO | null>(null)
 const comments = ref<CommentVO[]>([])
 const newComment = ref('')
-const commenting = ref(false)
-const acting = ref(false)
 
+const acting = ref(false)
 const showReopenDialog = ref(false)
 const reopenReason = ref('')
 const showRatingDialog = ref(false)
 const ratingScore = ref(5)
 const ratingComment = ref('')
 
-const ticketId = computed(() => Number(route.params.id))
 const isCreator = computed(() => ticket.value && userStore.user?.id === ticket.value.creatorId)
-const canEdit = computed(() => ticket.value && (isCreator.value || userStore.user?.role === 1) && ticket.value.status === 1)
 const showUserActions = computed(() => {
   if (!ticket.value || !isCreator.value) return false
   return ticket.value.status === 4 || ticket.value.status === 5
@@ -171,21 +157,17 @@ onMounted(async () => {
 })
 
 async function loadTicket() {
-  const res = await getTicketDetail(ticketId.value)
-  ticket.value = res.data
-}
-
-async function loadReport() {
+  loading.value = true
   try {
-    const res = await getReportByTicketId(ticketId.value)
-    report.value = res.data
-  } catch (e) {
-    // 报告可能不存在
+    const res = await getTicketDetail(ticketId)
+    ticket.value = res.data
+  } finally {
+    loading.value = false
   }
 }
 
 async function loadComments() {
-  const res = await getComments(ticketId.value)
+  const res = await getComments(ticketId)
   comments.value = res.data
 }
 
@@ -194,21 +176,30 @@ async function handleAddComment() {
     ElMessage.warning('请输入评论内容')
     return
   }
-  commenting.value = true
+  commentLoading.value = true
   try {
-    await addComment(ticketId.value, newComment.value)
-    ElMessage.success('评论成功')
+    await addComment(ticketId, newComment.value)
     newComment.value = ''
     await loadComments()
+    ElMessage.success('评论成功')
   } finally {
-    commenting.value = false
+    commentLoading.value = false
+  }
+}
+
+async function loadReport() {
+  try {
+    const res = await getReportByTicketId(ticketId)
+    report.value = res.data
+  } catch (e) {
+    // 报告可能不存在
   }
 }
 
 async function handleAccept() {
   acting.value = true
   try {
-    await acceptTicket(ticketId.value)
+    await acceptTicket(ticketId)
     ElMessage.success('验收成功')
     await loadTicket()
   } finally {
@@ -223,7 +214,7 @@ async function handleReopen() {
   }
   acting.value = true
   try {
-    await reopenTicket(ticketId.value, reopenReason.value)
+    await reopenTicket(ticketId, reopenReason.value)
     ElMessage.success('工单已重新打开')
     showReopenDialog.value = false
     reopenReason.value = ''
@@ -237,7 +228,7 @@ async function handleReopen() {
 async function handleRate() {
   acting.value = true
   try {
-    await rateTicket(ticketId.value, ratingScore.value, ratingComment.value || undefined)
+    await rateTicket(ticketId, ratingScore.value, ratingComment.value || undefined)
     ElMessage.success('评价成功')
     showRatingDialog.value = false
     await loadTicket()
@@ -246,51 +237,29 @@ async function handleRate() {
   }
 }
 
-function statusType(s: number) {
-  return s === 1 ? 'info' : s === 2 ? 'warning' : s === 3 ? 'warning' : s === 4 ? 'success' : s === 5 ? '' : 'info'
-}
-
 function priorityType(p: number) {
   return p === 1 ? 'danger' : p === 2 ? 'warning' : p === 3 ? '' : 'info'
+}
+function statusType(s: number) {
+  return s === 1 ? 'warning' : s === 2 ? '' : s === 3 ? 'warning' : s === 4 ? 'success' : 'info'
 }
 </script>
 
 <style scoped>
-.detail-page {
-  height: 100%;
-}
 .card-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-}
-.header-actions {
-  display: flex;
-  gap: 8px;
-}
-.user-actions {
-  display: flex;
-  gap: 12px;
-}
-.satisfaction-comment {
-  margin-top: 8px;
-  color: #606266;
-  font-style: italic;
-}
-.comment-list {
-  max-height: 400px;
-  overflow-y: auto;
+  align-items: center;
 }
 .comment-item {
   padding: 12px 0;
   border-bottom: 1px solid #f0f0f0;
 }
-.comment-item:last-child {
+.comment-item:last-of-type {
   border-bottom: none;
 }
 .comment-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
@@ -306,13 +275,8 @@ function priorityType(p: number) {
   color: #606266;
   line-height: 1.6;
 }
-.empty-tip {
-  text-align: center;
-  color: #909399;
-  padding: 30px 0;
-}
-.comment-input {
+.user-actions {
   display: flex;
-  flex-direction: column;
+  gap: 12px;
 }
 </style>
