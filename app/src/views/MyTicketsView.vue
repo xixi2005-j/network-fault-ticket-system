@@ -188,19 +188,19 @@
           <template #default="{ row }">{{ row.assigneeName || '未指派' }}</template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="170" />
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="$router.push(`/tickets/${row.id}`)">
-              <el-icon><View /></el-icon>查看
+              <el-icon :size="18"><View /></el-icon>
             </el-button>
             <el-button v-if="row.status === 4" link type="success" @click="confirmAccept(row.id)" :loading="acceptingId === row.id">
-              <el-icon><Check /></el-icon>验收
+              <el-icon :size="18"><Check /></el-icon>
             </el-button>
             <el-button v-if="row.status === 4 || row.status === 5" link type="warning" @click="showReopenDialog(row.id)">
-              <el-icon><RefreshLeft /></el-icon>返工
+              <el-icon :size="18"><RefreshLeft /></el-icon>
             </el-button>
             <el-button v-if="row.status === 5 && !row.satisfaction" link type="primary" @click="showRatingDialog(row.id)">
-              <el-icon><Star /></el-icon>评价
+              <el-icon :size="18"><Star /></el-icon>
             </el-button>
           </template>
         </el-table-column>
