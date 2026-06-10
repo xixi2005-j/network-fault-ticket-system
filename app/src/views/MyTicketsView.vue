@@ -328,7 +328,7 @@ function updateStats() {
 function confirmAccept(ticketId: number) {
   const ticket = tickets.value.find(t => t.id === ticketId)
   ElMessageBox.confirm(
-    `确认验收工单「${ticket?.title || ''}」？验收后工单将变为已结束状态。`,
+    `确认验收工单「${ticket?.title || ''}」？`,
     '确认验收',
     {
       confirmButtonText: '确认验收',
