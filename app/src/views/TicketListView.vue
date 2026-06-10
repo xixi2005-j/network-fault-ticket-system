@@ -71,12 +71,12 @@
             <el-button link type="primary" @click="$router.push(`/tickets/${row.id}`)">
               <el-icon :size="18"><View /></el-icon>
             </el-button>
-            <el-button link type="primary" :disabled="row.status === 4" @click="$router.push(`/tickets/${row.id}/edit`)">
+            <el-button link type="primary" :disabled="row.status >= 4" @click="$router.push(`/tickets/${row.id}/edit`)">
               <el-icon :size="18"><EditPen /></el-icon>
             </el-button>
-            <el-popconfirm title="确定删除？" @confirm="handleDelete(row.id)" :disabled="row.status === 4">
+            <el-popconfirm title="确定删除？" @confirm="handleDelete(row.id)" :disabled="row.status >= 4">
               <template #reference>
-                <el-button link type="danger" :disabled="row.status === 4">
+                <el-button link type="danger" :disabled="row.status >= 4">
                   <el-icon :size="18"><Delete /></el-icon>
                 </el-button>
               </template>
