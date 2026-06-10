@@ -150,7 +150,7 @@
     </el-row>
 
     <!-- 全部工单列表 -->
-    <el-card shadow="hover" style="margin-top: 16px">
+    <el-card shadow="hover" class="table-card" style="margin-top: 16px">
       <template #header>
         <div class="card-header">
           <span>全部工单</span>
