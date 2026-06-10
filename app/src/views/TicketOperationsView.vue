@@ -60,7 +60,7 @@
           <el-tag type="warning" size="small">{{ reviewingTickets.length }}</el-tag>
         </div>
       </template>
-      <el-table :data="reviewingTickets" stripe>
+      <el-table :data="reviewingTickets" stripe empty-text="暂无待审核工单">
         <el-table-column label="ID" width="70">
           <template #default="{ row }">{{ String(row.id).padStart(3, '0') }}</template>
         </el-table-column>
@@ -80,7 +80,6 @@
           </template>
         </el-table-column>
       </el-table>
-      <div v-if="reviewingTickets.length === 0" class="empty-tip">暂无待审核工单</div>
     </el-card>
 
     <!-- 已完成工单 -->
