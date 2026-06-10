@@ -1,21 +1,22 @@
 <template>
-  <div class="page-container">
-    <!-- 筛选栏 -->
-    <el-card shadow="never" class="filter-card">
+  <div class="list-page">
+    <!-- 筛选区域 -->
+    <el-card shadow="hover" class="filter-card">
       <el-form :inline="true" :model="query">
         <el-form-item label="关键词">
-          <el-input v-model="query.keyword" placeholder="请输入" clearable @keyup.enter="loadData" />
+          <el-input v-model="query.keyword" placeholder="搜索标题" clearable @keyup.enter="loadTickets" />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="请选择" clearable>
+          <el-select v-model="query.status" placeholder="全部" clearable>
             <el-option label="待处理" :value="1" />
             <el-option label="处理中" :value="2" />
-            <el-option label="已完成" :value="3" />
-            <el-option label="已关闭" :value="4" />
+            <el-option label="审核中" :value="3" />
+            <el-option label="已完成" :value="4" />
+            <el-option label="已结束" :value="5" />
           </el-select>
         </el-form-item>
         <el-form-item label="优先级">
-          <el-select v-model="query.priority" placeholder="请选择" clearable>
+          <el-select v-model="query.priority" placeholder="全部" clearable>
             <el-option label="紧急" :value="1" />
             <el-option label="高" :value="2" />
             <el-option label="中" :value="3" />
@@ -23,30 +24,27 @@
           </el-select>
         </el-form-item>
         <el-form-item label="分类">
-          <el-select v-model="query.category" placeholder="请选择" clearable>
+          <el-select v-model="query.category" placeholder="全部" clearable>
             <el-option label="网络故障" :value="1" />
             <el-option label="设备故障" :value="2" />
             <el-option label="服务异常" :value="3" />
             <el-option label="其他" :value="4" />
           </el-select>
         </el-form-item>
-        <el-form-item class="btn-group">
-          <el-button type="primary" @click="loadData">查询</el-button>
+        <el-form-item>
+          <el-button type="primary" @click="loadTickets">查询</el-button>
           <el-button @click="resetQuery">重置</el-button>
-          <el-button type="success" @click="$router.push('/tickets/create')">新增</el-button>
         </el-form-item>
       </el-form>
     </el-card>
 
-    <!-- 工单表格 -->
-    <el-card shadow="never" class="table-card">
-      <el-table :data="tableData" v-loading="loading" stripe>
-        <el-table-column label="ID" width="70">
-          <template #default="{ row }">{{ String(row.id).padStart(3, '0') }}</template>
-        </el-table-column>
+    <!-- 工单列表 -->
+    <el-card shadow="hover" style="margin-top: 16px">
+      <el-table :data="tickets" stripe style="width: 100%">
+        <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="title" label="标题" min-width="200">
           <template #default="{ row }">
-            <router-link :to="`/tickets/${row.id}`" class="link">{{ row.title }}</router-link>
+            <router-link :to="`/tickets/${row.id}`" class="ticket-link">{{ row.title }}</router-link>
           </template>
         </el-table-column>
         <el-table-column prop="categoryName" label="分类" width="100" />
@@ -55,81 +53,67 @@
             <el-tag :type="priorityType(row.priority)" size="small">{{ row.priorityName }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="90">
+        <el-table-column label="状态" width="80">
           <template #default="{ row }">
             <el-tag :type="statusType(row.status)" size="small">{{ row.statusName }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="creatorName" label="创建人" width="100" />
-        <el-table-column prop="assigneeName" label="处理人" width="100">
-          <template #default="{ row }">{{ row.assigneeName || '未指派' }}</template>
-        </el-table-column>
+        <el-table-column prop="assigneeName" label="处理人" width="100" />
         <el-table-column prop="createTime" label="创建时间" width="170" />
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="$router.push(`/tickets/${row.id}`)">
-              <el-icon :size="18"><View /></el-icon>
-            </el-button>
-            <el-button link type="primary" :disabled="row.status === 4" @click="$router.push(`/tickets/${row.id}/edit`)">
-              <el-icon :size="18"><EditPen /></el-icon>
-            </el-button>
-            <el-popconfirm title="确定删除？" @confirm="handleDelete(row.id)" :disabled="row.status === 4">
-              <template #reference>
-                <el-button link type="danger" :disabled="row.status === 4">
-                  <el-icon :size="18"><Delete /></el-icon>
-                </el-button>
-              </template>
-            </el-popconfirm>
+            <el-button type="primary" link @click="router.push(`/tickets/${row.id}`)">查看</el-button>
+            <el-button v-if="canEdit(row)" type="warning" link @click="router.push(`/tickets/${row.id}/edit`)">编辑</el-button>
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
 
-    <!-- 分页区域 -->
-    <div class="pagination-wrapper">
-      <el-pagination
-        v-model:current-page="query.page"
-        v-model:page-size="query.pageSize"
-        :total="total"
-        :page-sizes="[10, 20, 50]"
-        layout="total, sizes, prev, pager, next"
-        @size-change="loadData"
-        @current-change="loadData"
-      />
-    </div>
+      <!-- 分页 -->
+      <div class="pagination">
+        <el-pagination
+          v-model:current-page="query.page"
+          v-model:page-size="query.pageSize"
+          :page-sizes="[10, 20, 50]"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="loadTickets"
+          @current-change="loadTickets"
+        />
+      </div>
+    </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { getTickets, deleteTicket } from '@/api/ticket'
-import type { TicketVO } from '@/types/api'
+import { useRouter } from 'vue-router'
+import { getTickets } from '@/api/ticket'
+import { useUserStore } from '@/stores/user'
+import type { TicketVO, TicketPageQuery } from '@/types/api'
 
-const loading = ref(false)
-const tableData = ref<TicketVO[]>([])
+const router = useRouter()
+const userStore = useUserStore()
+
+const tickets = ref<TicketVO[]>([])
 const total = ref(0)
-
-const query = reactive({
+const query = reactive<TicketPageQuery>({
   page: 1,
   pageSize: 10,
   keyword: '',
-  status: undefined as number | undefined,
-  priority: undefined as number | undefined,
-  category: undefined as number | undefined
+  status: undefined,
+  priority: undefined,
+  category: undefined
 })
 
-onMounted(() => loadData())
+onMounted(() => {
+  loadTickets()
+})
 
-async function loadData() {
-  loading.value = true
-  try {
-    const res = await getTickets(query)
-    tableData.value = res.data.records
-    total.value = res.data.total
-  } finally {
-    loading.value = false
-  }
+async function loadTickets() {
+  const res = await getTickets(query)
+  tickets.value = res.data.records
+  total.value = res.data.total
 }
 
 function resetQuery() {
@@ -138,117 +122,39 @@ function resetQuery() {
   query.priority = undefined
   query.category = undefined
   query.page = 1
-  loadData()
+  loadTickets()
 }
 
-async function handleDelete(id: number) {
-  await deleteTicket(id)
-  ElMessage.success('删除成功')
-  loadData()
+function canEdit(row: TicketVO) {
+  return (userStore.user?.id === row.creatorId || userStore.user?.role === 1) && row.status === 1
+}
+
+function statusType(s: number) {
+  return s === 1 ? 'info' : s === 2 ? 'warning' : s === 3 ? 'warning' : s === 4 ? 'success' : s === 5 ? '' : 'info'
 }
 
 function priorityType(p: number) {
   return p === 1 ? 'danger' : p === 2 ? 'warning' : p === 3 ? '' : 'info'
 }
-
-function statusType(s: number) {
-  return s === 1 ? 'warning' : s === 2 ? '' : s === 3 ? 'success' : 'info'
-}
 </script>
 
 <style scoped>
-.page-container {
-  width: 100%;
+.list-page {
   height: 100%;
-  display: flex;
-  flex-direction: column;
 }
-.table-card {
-  flex: 1;
-  margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  border-bottom: none;
-  border-radius: 4px 4px 0 0;
-}
-.table-card :deep(.el-card__body) {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding-bottom: 0;
-}
-.table-card :deep(.el-table) {
-  flex: 1;
-}
-.table-card :deep(.el-table th.el-table__cell),
-.table-card :deep(.el-table td.el-table__cell) {
-  border-right: 1px solid #ebeef5;
-}
-.table-card :deep(.el-table th.el-table__cell:last-child),
-.table-card :deep(.el-table td.el-table__cell:last-child) {
-  border-right: none;
-}
-.table-card :deep(.el-table th.el-table__cell:nth-child(4)),
-.table-card :deep(.el-table th.el-table__cell:nth-child(5)),
-.table-card :deep(.el-table th.el-table__cell:nth-child(6)),
-.table-card :deep(.el-table th.el-table__cell:nth-child(9)) {
-  text-align: center;
-}
-.table-card :deep(.el-table td.el-table__cell:nth-child(4)),
-.table-card :deep(.el-table td.el-table__cell:nth-child(5)),
-.table-card :deep(.el-table td.el-table__cell:nth-child(6)),
-.table-card :deep(.el-table td.el-table__cell:nth-child(9)) {
-  text-align: center;
-}
-.filter-card :deep(.el-form-item) {
+.filter-card {
   margin-bottom: 0;
 }
-.filter-card :deep(.el-select) {
-  width: 140px;
-}
-.filter-card :deep(.el-select .el-input__inner) {
-  color: #333;
-}
-.btn-group {
-  margin-left: auto;
-}
-.btn-group :deep(.el-button) {
-  margin-left: 20px;
-}
-.btn-group :deep(.el-button:first-child) {
-  margin-left: 0;
-}
-.link {
+.ticket-link {
   color: #409eff;
   text-decoration: none;
 }
-.link:hover {
+.ticket-link:hover {
   text-decoration: underline;
 }
-.table-card :deep(.el-table .el-button) {
-  font-size: 18px;
-  padding: 8px;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-.table-card :deep(.el-table .el-button:hover) {
-  background-color: #ecf5ff;
-}
-.table-card :deep(.el-table .el-button--danger:hover) {
-  background-color: #fef0f0;
-}
-.table-card :deep(.el-table .el-button.is-disabled) {
-  opacity: 0.4;
-}
-.pagination-wrapper {
-  background-color: #f0f2f5;
-  padding: 12px 24px;
-  border-top: 1px solid #dcdfe6;
+.pagination {
+  margin-top: 20px;
   display: flex;
   justify-content: flex-end;
-  border-radius: 8px;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
-  margin-top: 1px;
 }
 </style>

@@ -28,3 +28,15 @@ export function changeTicketStatus(id: number, status: number) {
 export function assignTicket(id: number, assigneeId: number) {
   return request.put<any, Result<TicketVO>>(`/tickets/${id}/assign`, null, { params: { assigneeId } })
 }
+
+export function acceptTicket(id: number) {
+  return request.put<any, Result<TicketVO>>(`/tickets/${id}/accept`)
+}
+
+export function rateTicket(id: number, satisfaction: number, comment?: string) {
+  return request.put<any, Result<TicketVO>>(`/tickets/${id}/rate`, null, { params: { satisfaction, comment } })
+}
+
+export function reopenTicket(id: number, reason: string) {
+  return request.put<any, Result<TicketVO>>(`/tickets/${id}/reopen`, null, { params: { reason } })
+}

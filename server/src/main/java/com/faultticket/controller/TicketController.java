@@ -62,4 +62,38 @@ public class TicketController {
     public Result<TicketVO> assign(@PathVariable Long id, @RequestParam Long assigneeId) {
         return Result.success("指派成功", ticketService.assign(id, assigneeId));
     }
+
+    /**
+     * 用户验收工单
+     */
+    @PutMapping("/{id}/accept")
+    public Result<TicketVO> accept(@PathVariable Long id, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return Result.success("验收成功", ticketService.acceptTicket(id, userId));
+    }
+
+    /**
+     * 用户提交满意度评价
+     */
+    @PutMapping("/{id}/rate")
+    public Result<TicketVO> rate(
+            @PathVariable Long id,
+            @RequestParam Integer satisfaction,
+            @RequestParam(required = false) String comment,
+            HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return Result.success("评价成功", ticketService.rateTicket(id, satisfaction, comment, userId));
+    }
+
+    /**
+     * 重新打开工单
+     */
+    @PutMapping("/{id}/reopen")
+    public Result<TicketVO> reopen(
+            @PathVariable Long id,
+            @RequestParam String reason,
+            HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return Result.success("工单已重新打开", ticketService.reopenTicket(id, reason, userId));
+    }
 }

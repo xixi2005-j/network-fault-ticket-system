@@ -23,4 +23,7 @@ public class TicketVO {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private LocalDateTime resolveTime;
+    private LocalDateTime closeTime;
+    private Integer satisfaction;
+    private String satisfactionComment;
 }

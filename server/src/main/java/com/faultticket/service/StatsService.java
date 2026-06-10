@@ -24,8 +24,12 @@ public class StatsService {
                 new LambdaQueryWrapper<Ticket>().eq(Ticket::getStatus, 1)));
         result.put("processing", ticketMapper.selectCount(
                 new LambdaQueryWrapper<Ticket>().eq(Ticket::getStatus, 2)));
-        result.put("completed", ticketMapper.selectCount(
+        result.put("reviewing", ticketMapper.selectCount(
                 new LambdaQueryWrapper<Ticket>().eq(Ticket::getStatus, 3)));
+        result.put("completed", ticketMapper.selectCount(
+                new LambdaQueryWrapper<Ticket>().eq(Ticket::getStatus, 4)));
+        result.put("closed", ticketMapper.selectCount(
+                new LambdaQueryWrapper<Ticket>().eq(Ticket::getStatus, 5)));
         return result;
     }
 

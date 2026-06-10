@@ -58,6 +58,9 @@ export interface TicketVO {
   createTime: string
   updateTime: string
   resolveTime: string | null
+  closeTime: string | null
+  satisfaction: number | null
+  satisfactionComment: string | null
 }
 
 /** 创建/编辑工单 */
@@ -94,5 +97,30 @@ export interface StatsOverview {
   total: number
   pending: number
   processing: number
+  reviewing: number
   completed: number
+  closed: number
+}
+
+/** 完成报告 */
+export interface CompletionReportVO {
+  id: number
+  ticketId: number
+  reporterId: number
+  reporterName: string | null
+  workDone: string
+  timeSpent: string | null
+  solution: string | null
+  rejectReason: string | null
+  status: number
+  statusText: string
+  createTime: string
+  updateTime: string
+}
+
+/** 提交完成报告 */
+export interface CompletionReportDTO {
+  workDone: string
+  timeSpent?: string
+  solution?: string
 }

@@ -2,7 +2,7 @@
   <div class="dashboard">
     <!-- 统计卡片 -->
     <el-row :gutter="20" class="cards">
-      <el-col :span="6">
+      <el-col :span="4">
         <el-card shadow="hover" class="card total">
           <div class="card-inner">
             <div class="label">总工单数</div>
@@ -11,7 +11,7 @@
           <el-icon class="icon"><Tickets /></el-icon>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :span="4">
         <el-card shadow="hover" class="card pending">
           <div class="card-inner">
             <div class="label">待处理</div>
@@ -20,7 +20,7 @@
           <el-icon class="icon"><Clock /></el-icon>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :span="4">
         <el-card shadow="hover" class="card processing">
           <div class="card-inner">
             <div class="label">处理中</div>
@@ -29,13 +29,31 @@
           <el-icon class="icon"><Loading /></el-icon>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :span="4">
+        <el-card shadow="hover" class="card reviewing">
+          <div class="card-inner">
+            <div class="label">审核中</div>
+            <div class="value">{{ overview.reviewing }}</div>
+          </div>
+          <el-icon class="icon"><Document /></el-icon>
+        </el-card>
+      </el-col>
+      <el-col :span="4">
         <el-card shadow="hover" class="card completed">
           <div class="card-inner">
             <div class="label">已完成</div>
             <div class="value">{{ overview.completed }}</div>
           </div>
           <el-icon class="icon"><CircleCheck /></el-icon>
+        </el-card>
+      </el-col>
+      <el-col :span="4">
+        <el-card shadow="hover" class="card closed">
+          <div class="card-inner">
+            <div class="label">已结束</div>
+            <div class="value">{{ overview.closed }}</div>
+          </div>
+          <el-icon class="icon"><SuccessFilled /></el-icon>
         </el-card>
       </el-col>
     </el-row>
@@ -63,7 +81,7 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import { getOverview, getTrend, getByCategory } from '@/api/stats'
 
-const overview = reactive({ total: 0, pending: 0, processing: 0, completed: 0 })
+const overview = reactive({ total: 0, pending: 0, processing: 0, reviewing: 0, completed: 0, closed: 0 })
 const trendChartRef = ref<HTMLElement>()
 const categoryChartRef = ref<HTMLElement>()
 
@@ -150,5 +168,7 @@ async function loadCategory() {
 .card.total .value { color: #409eff; }
 .card.pending .value { color: #e6a23c; }
 .card.processing .value { color: #f56c6c; }
+.card.reviewing .value { color: #909399; }
 .card.completed .value { color: #67c23a; }
+.card.closed .value { color: #67c23a; }
 </style>

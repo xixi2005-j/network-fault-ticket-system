@@ -1,121 +1,198 @@
 <template>
   <div class="tasks-page">
-    <!-- 统计卡片 -->
-    <el-row :gutter="16" class="stat-cards">
-      <el-col :span="8">
-        <el-card shadow="hover" class="stat-card pending">
-          <div class="stat-num">{{ pendingCount }}</div>
-          <div class="stat-label">待处理</div>
+    <el-row :gutter="20">
+      <!-- 待处理任务 -->
+      <el-col :span="12">
+        <el-card shadow="hover" class="section-card">
+          <template #header>
+            <div class="section-header">
+              <span>待处理任务</span>
+              <el-tag type="warning" size="small">{{ pendingTasks.length }}</el-tag>
+            </div>
+          </template>
+          <div v-if="pendingTasks.length === 0" class="empty-tip">暂无待处理任务</div>
+          <div v-for="ticket in pendingTasks" :key="ticket.id" class="ticket-item">
+            <div class="ticket-info">
+              <router-link :to="`/tickets/${ticket.id}`" class="ticket-title">{{ ticket.title }}</router-link>
+              <div class="ticket-meta">
+                <el-tag :type="priorityType(ticket.priority)" size="small">{{ ticket.priorityName }}</el-tag>
+                <span class="meta-text">{{ ticket.creatorName }} · {{ ticket.createTime }}</span>
+              </div>
+            </div>
+            <div class="ticket-actions">
+              <el-button type="primary" size="small" @click="handleAccept(ticket.id)" :loading="acceptingId === ticket.id">接单</el-button>
+            </div>
+          </div>
         </el-card>
       </el-col>
-      <el-col :span="8">
-        <el-card shadow="hover" class="stat-card processing">
-          <div class="stat-num">{{ processingCount }}</div>
-          <div class="stat-label">处理中</div>
-        </el-card>
-      </el-col>
-      <el-col :span="8">
-        <el-card shadow="hover" class="stat-card completed">
-          <div class="stat-num">{{ completedCount }}</div>
-          <div class="stat-label">已完成</div>
+
+      <!-- 处理中任务 -->
+      <el-col :span="12">
+        <el-card shadow="hover" class="section-card">
+          <template #header>
+            <div class="section-header">
+              <span>处理中任务</span>
+              <el-tag type="" size="small">{{ processingTasks.length }}</el-tag>
+            </div>
+          </template>
+          <div v-if="processingTasks.length === 0" class="empty-tip">暂无处理中任务</div>
+          <div v-for="ticket in processingTasks" :key="ticket.id" class="ticket-item">
+            <div class="ticket-info">
+              <router-link :to="`/tickets/${ticket.id}`" class="ticket-title">{{ ticket.title }}</router-link>
+              <div class="ticket-meta">
+                <el-tag :type="priorityType(ticket.priority)" size="small">{{ ticket.priorityName }}</el-tag>
+                <span class="meta-text">{{ ticket.creatorName }} · {{ ticket.createTime }}</span>
+              </div>
+            </div>
+            <div class="ticket-actions">
+              <el-button type="success" size="small" @click="showReportDialog(ticket.id)">提交报告</el-button>
+            </div>
+          </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <!-- 我的任务列表 -->
-    <el-card shadow="hover" style="margin-top: 16px">
+    <!-- 审核中任务 -->
+    <el-card shadow="hover" class="section-card" style="margin-top: 20px">
       <template #header>
         <div class="section-header">
-          <span>我的任务</span>
-          <el-radio-group v-model="statusFilter" size="small">
-            <el-radio-button :value="0">全部</el-radio-button>
-            <el-radio-button :value="2">处理中</el-radio-button>
-            <el-radio-button :value="3">已完成</el-radio-button>
-          </el-radio-group>
+          <span>审核中任务</span>
+          <el-tag type="warning" size="small">{{ reviewingTasks.length }}</el-tag>
         </div>
       </template>
-      <el-table :data="filteredTasks" stripe v-loading="loading">
+      <div v-if="reviewingTasks.length === 0" class="empty-tip">暂无审核中任务</div>
+      <el-table :data="reviewingTasks" stripe size="small">
         <el-table-column prop="id" label="ID" width="60" />
         <el-table-column prop="title" label="标题" min-width="200">
           <template #default="{ row }">
-            <router-link :to="`/tickets/${row.id}`" class="link">{{ row.title }}</router-link>
+            <router-link :to="`/tickets/${row.id}`" class="ticket-title">{{ row.title }}</router-link>
           </template>
         </el-table-column>
         <el-table-column prop="categoryName" label="分类" width="100" />
-        <el-table-column label="优先级" width="80">
-          <template #default="{ row }">
-            <el-tag :type="priorityType(row.priority)" size="small">{{ row.priorityName }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="状态" width="90">
-          <template #default="{ row }">
-            <el-tag :type="statusType(row.status)" size="small">{{ row.statusName }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="creatorName" label="提交人" width="100" />
-        <el-table-column prop="createTime" label="创建时间" width="170" />
-        <el-table-column label="操作" width="120" fixed="right">
-          <template #default="{ row }">
-            <el-button v-if="row.status === 2" type="success" size="small" @click="handleComplete(row.id)" :loading="completingId === row.id">完成</el-button>
-            <span v-else-if="row.status === 3" class="done-text">已处理</span>
-          </template>
-        </el-table-column>
+        <el-table-column prop="priorityName" label="优先级" width="80" />
+        <el-table-column prop="updateTime" label="提交时间" width="170" />
       </el-table>
     </el-card>
+
+    <!-- 已完成任务 -->
+    <el-card shadow="hover" class="section-card" style="margin-top: 20px">
+      <template #header>
+        <div class="section-header">
+          <span>已完成任务</span>
+          <el-tag type="success" size="small">{{ completedTasks.length }}</el-tag>
+        </div>
+      </template>
+      <div v-if="completedTasks.length === 0" class="empty-tip">暂无已完成任务</div>
+      <el-table :data="completedTasks" stripe size="small">
+        <el-table-column prop="id" label="ID" width="60" />
+        <el-table-column prop="title" label="标题" min-width="200">
+          <template #default="{ row }">
+            <router-link :to="`/tickets/${row.id}`" class="ticket-title">{{ row.title }}</router-link>
+          </template>
+        </el-table-column>
+        <el-table-column prop="categoryName" label="分类" width="100" />
+        <el-table-column prop="priorityName" label="优先级" width="80" />
+        <el-table-column prop="resolveTime" label="完成时间" width="170" />
+      </el-table>
+    </el-card>
+
+    <!-- 提交报告对话框 -->
+    <el-dialog v-model="reportDialogVisible" title="提交完成报告" width="500px">
+      <el-form :model="reportForm" label-width="100px">
+        <el-form-item label="完成工作" required>
+          <el-input v-model="reportForm.workDone" type="textarea" :rows="4" placeholder="请描述完成的工作内容" />
+        </el-form-item>
+        <el-form-item label="耗时统计">
+          <el-input v-model="reportForm.timeSpent" placeholder="例如：2小时30分钟" />
+        </el-form-item>
+        <el-form-item label="解决方案">
+          <el-input v-model="reportForm.solution" type="textarea" :rows="3" placeholder="请描述解决方案（选填）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="reportDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmitReport" :loading="submitting">提交</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getTickets, changeTicketStatus } from '@/api/ticket'
-import { useUserStore } from '@/stores/user'
+import { submitReport } from '@/api/report'
 import type { TicketVO } from '@/types/api'
 
-const userStore = useUserStore()
-const loading = ref(false)
-const tasks = ref<TicketVO[]>([])
-const statusFilter = ref(0)
-const completingId = ref<number | null>(null)
+const allTasks = ref<TicketVO[]>([])
+const acceptingId = ref<number | null>(null)
 
-const pendingCount = computed(() => tasks.value.filter(t => t.status === 1).length)
-const processingCount = computed(() => tasks.value.filter(t => t.status === 2).length)
-const completedCount = computed(() => tasks.value.filter(t => t.status === 3).length)
+const pendingTasks = computed(() => allTasks.value.filter(t => t.status === 1))
+const processingTasks = computed(() => allTasks.value.filter(t => t.status === 2))
+const reviewingTasks = computed(() => allTasks.value.filter(t => t.status === 3))
+const completedTasks = computed(() => allTasks.value.filter(t => t.status === 4 || t.status === 5))
 
-const filteredTasks = computed(() => {
-  if (statusFilter.value === 0) return tasks.value
-  return tasks.value.filter(t => t.status === statusFilter.value)
+const reportDialogVisible = ref(false)
+const currentTicketId = ref<number | null>(null)
+const reportForm = reactive({
+  workDone: '',
+  timeSpent: '',
+  solution: ''
+})
+const submitting = ref(false)
+
+onMounted(async () => {
+  await loadTasks()
 })
 
-onMounted(() => loadTasks())
-
 async function loadTasks() {
-  loading.value = true
+  const res = await getTickets({ page: 1, pageSize: 100 })
+  allTasks.value = res.data.records
+}
+
+async function handleAccept(ticketId: number) {
+  acceptingId.value = ticketId
   try {
-    const res = await getTickets({ page: 1, pageSize: 100 })
-    tasks.value = res.data.records.filter(t => t.assigneeId === userStore.user?.id)
+    await changeTicketStatus(ticketId, 2)
+    ElMessage.success('接单成功')
+    await loadTasks()
   } finally {
-    loading.value = false
+    acceptingId.value = null
   }
 }
 
-async function handleComplete(id: number) {
-  completingId.value = id
+function showReportDialog(ticketId: number) {
+  currentTicketId.value = ticketId
+  reportForm.workDone = ''
+  reportForm.timeSpent = ''
+  reportForm.solution = ''
+  reportDialogVisible.value = true
+}
+
+async function handleSubmitReport() {
+  if (!reportForm.workDone.trim()) {
+    ElMessage.warning('请填写完成工作内容')
+    return
+  }
+  if (!currentTicketId.value) return
+
+  submitting.value = true
   try {
-    await changeTicketStatus(id, 3)
-    ElMessage.success('已标记完成')
+    await submitReport(currentTicketId.value, {
+      workDone: reportForm.workDone,
+      timeSpent: reportForm.timeSpent || undefined,
+      solution: reportForm.solution || undefined
+    })
+    ElMessage.success('报告提交成功')
+    reportDialogVisible.value = false
     await loadTasks()
   } finally {
-    completingId.value = null
+    submitting.value = false
   }
 }
 
 function priorityType(p: number) {
   return p === 1 ? 'danger' : p === 2 ? 'warning' : p === 3 ? '' : 'info'
-}
-
-function statusType(s: number) {
-  return s === 1 ? 'warning' : s === 2 ? '' : s === 3 ? 'success' : 'info'
 }
 </script>
 
@@ -123,44 +200,56 @@ function statusType(s: number) {
 .tasks-page {
   height: 100%;
 }
-.stat-cards {
-  margin-bottom: 0;
-}
-.stat-card {
-  text-align: center;
-}
-.stat-num {
-  font-size: 36px;
-  font-weight: bold;
-}
-.stat-card.pending .stat-num {
-  color: #e6a23c;
-}
-.stat-card.processing .stat-num {
-  color: #409eff;
-}
-.stat-card.completed .stat-num {
-  color: #67c23a;
-}
-.stat-label {
-  font-size: 14px;
-  color: #909399;
-  margin-top: 4px;
+.section-card {
+  height: 100%;
 }
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-.link {
-  color: #409eff;
+.empty-tip {
+  text-align: center;
+  color: #909399;
+  padding: 30px 0;
+}
+.ticket-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.ticket-item:last-child {
+  border-bottom: none;
+}
+.ticket-info {
+  flex: 1;
+  min-width: 0;
+}
+.ticket-title {
+  color: #303133;
   text-decoration: none;
+  font-weight: 500;
 }
-.link:hover {
-  text-decoration: underline;
+.ticket-title:hover {
+  color: #409eff;
 }
-.done-text {
+.ticket-meta {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.meta-text {
   font-size: 12px;
-  color: #67c23a;
+  color: #909399;
+}
+.ticket-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+  flex-shrink: 0;
 }
 </style>

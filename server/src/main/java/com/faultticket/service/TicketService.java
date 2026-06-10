@@ -12,6 +12,7 @@ import com.faultticket.mapper.TicketMapper;
 import com.faultticket.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -149,10 +150,97 @@ public class TicketService {
         return convertToVO(ticket);
     }
 
+    /**
+     * 用户验收工单
+     */
+    @Transactional
+    public TicketVO acceptTicket(Long ticketId, Long userId) {
+        Ticket ticket = ticketMapper.selectById(ticketId);
+        if (ticket == null) {
+            throw new BusinessException(404, "工单不存在");
+        }
+
+        // 只有创建人可以验收
+        if (!ticket.getCreatorId().equals(userId)) {
+            throw new BusinessException(403, "只有创建人可以验收工单");
+        }
+
+        // 工单必须是已完成状态
+        if (ticket.getStatus() != 4) {
+            throw new BusinessException(400, "只有已完成的工单可以验收");
+        }
+
+        ticket.setStatus(5); // 已结束
+        ticket.setCloseTime(LocalDateTime.now());
+        ticketMapper.updateById(ticket);
+
+        return convertToVO(ticket);
+    }
+
+    /**
+     * 用户提交满意度评价
+     */
+    @Transactional
+    public TicketVO rateTicket(Long ticketId, Integer satisfaction, String comment, Long userId) {
+        Ticket ticket = ticketMapper.selectById(ticketId);
+        if (ticket == null) {
+            throw new BusinessException(404, "工单不存在");
+        }
+
+        // 只有创建人可以评价
+        if (!ticket.getCreatorId().equals(userId)) {
+            throw new BusinessException(403, "只有创建人可以评价工单");
+        }
+
+        // 工单必须是已结束状态
+        if (ticket.getStatus() != 5) {
+            throw new BusinessException(400, "只有已结束的工单可以评价");
+        }
+
+        if (satisfaction < 1 || satisfaction > 5) {
+            throw new BusinessException(400, "评分必须在1-5之间");
+        }
+
+        ticket.setSatisfaction(satisfaction);
+        ticket.setSatisfactionComment(comment);
+        ticketMapper.updateById(ticket);
+
+        return convertToVO(ticket);
+    }
+
+    /**
+     * 重新打开工单
+     */
+    @Transactional
+    public TicketVO reopenTicket(Long ticketId, String reason, Long userId) {
+        Ticket ticket = ticketMapper.selectById(ticketId);
+        if (ticket == null) {
+            throw new BusinessException(404, "工单不存在");
+        }
+
+        // 只有创建人可以重新打开
+        if (!ticket.getCreatorId().equals(userId)) {
+            throw new BusinessException(403, "只有创建人可以重新打开工单");
+        }
+
+        // 工单必须是已结束或已完成状态
+        if (ticket.getStatus() != 4 && ticket.getStatus() != 5) {
+            throw new BusinessException(400, "只有已完成或已结束的工单可以重新打开");
+        }
+
+        ticket.setStatus(2); // 回到处理中
+        ticket.setCloseTime(null);
+        ticket.setSatisfaction(null);
+        ticket.setSatisfactionComment(null);
+        ticketMapper.updateById(ticket);
+
+        return convertToVO(ticket);
+    }
+
     private void validateStatusChange(Integer current, Integer target, Ticket ticket, Long userId, Integer role) {
-        // 已关闭是终态
-        if (current == 4) {
-            throw new BusinessException(400, "已关闭的工单不能变更状态");
+        // 已结束是终态（需要通过专门的接口操作）
+        if (current == 5) {
+            throw new BusinessException(400, "已结束的工单不能直接变更状态");
         }
 
         // 待处理 → 处理中（管理员指派或运维接单）
@@ -161,32 +249,11 @@ public class TicketService {
                 throw new BusinessException(403, "无权操作");
             }
         }
-        // 待处理 → 已关闭（管理员或创建人）
-        else if (current == 1 && target == 4) {
-            if (role != 1 && !ticket.getCreatorId().equals(userId)) {
-                throw new BusinessException(403, "无权操作");
-            }
-        }
-        // 处理中 → 已完成（处理人）
-        else if (current == 2 && target == 3) {
-            if (!ticket.getAssigneeId().equals(userId) && role != 1) {
-                throw new BusinessException(403, "只有处理人或管理员可以标记完成");
-            }
-        }
-        // 处理中 → 已关闭（管理员）
-        else if (current == 2 && target == 4) {
-            if (role != 1) {
-                throw new BusinessException(403, "只有管理员可以关闭处理中的工单");
-            }
-        }
-        // 已完成 → 已关闭（管理员或创建人）
-        else if (current == 3 && target == 4) {
-            if (role != 1 && !ticket.getCreatorId().equals(userId)) {
-                throw new BusinessException(403, "无权操作");
-            }
-        }
+        // 处理中 → 审核中（通过提交报告接口，不走这里）
+        // 审核中 → 已完成（通过审核接口，不走这里）
+        // 已完成 → 已结束（通过验收接口，不走这里）
         else {
-            throw new BusinessException(400, "不允许的状态变更");
+            throw new BusinessException(400, "不允许的状态变更，请使用专用接口");
         }
     }
 
@@ -206,6 +273,9 @@ public class TicketService {
         vo.setCreateTime(ticket.getCreateTime());
         vo.setUpdateTime(ticket.getUpdateTime());
         vo.setResolveTime(ticket.getResolveTime());
+        vo.setCloseTime(ticket.getCloseTime());
+        vo.setSatisfaction(ticket.getSatisfaction());
+        vo.setSatisfactionComment(ticket.getSatisfactionComment());
 
         // 查询创建人和处理人姓名
         User creator = userMapper.selectById(ticket.getCreatorId());
@@ -246,8 +316,9 @@ public class TicketService {
         return switch (status) {
             case 1 -> "待处理";
             case 2 -> "处理中";
-            case 3 -> "已完成";
-            case 4 -> "已关闭";
+            case 3 -> "审核中";
+            case 4 -> "已完成";
+            case 5 -> "已结束";
             default -> "未知";
         };
     }
