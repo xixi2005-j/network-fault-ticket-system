@@ -151,6 +151,11 @@ function handleCommand(command: string) {
   align-items: center;
   cursor: pointer;
   color: #606266;
+  outline: none;
+}
+
+.dropdown-link:focus-visible {
+  outline: none;
 }
 .main {
   background: #f0f2f5;
