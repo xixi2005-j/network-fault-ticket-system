@@ -102,7 +102,7 @@
                   <el-icon><Check /></el-icon>验收
                 </el-button>
                 <el-button type="warning" size="small" plain @click="showReopenDialog(ticket.id)">
-                  <el-icon><RefreshLeft /></el-icon>重开
+                  <el-icon><RefreshLeft /></el-icon>返工
                 </el-button>
               </div>
             </div>
@@ -140,7 +140,7 @@
                   <el-icon><Star /></el-icon>评价
                 </el-button>
                 <el-button type="warning" size="small" plain @click="showReopenDialog(ticket.id)">
-                  <el-icon><RefreshLeft /></el-icon>重开
+                  <el-icon><RefreshLeft /></el-icon>返工
                 </el-button>
               </div>
             </div>
@@ -204,19 +204,19 @@
       </el-table>
     </el-card>
 
-    <!-- 重新打开对话框 -->
-    <el-dialog v-model="reopenDialogVisible" title="重新打开工单" width="450px" :close-on-click-modal="false">
+    <!-- 返工对话框 -->
+    <el-dialog v-model="reopenDialogVisible" title="申请返工" width="450px" :close-on-click-modal="false">
       <el-form :model="reopenForm" label-width="80px">
         <el-form-item label="工单" required>
           <span>{{ currentTicketTitle }}</span>
         </el-form-item>
         <el-form-item label="原因" required>
-          <el-input v-model="reopenForm.reason" type="textarea" :rows="4" placeholder="请详细说明重新打开的原因，以便运维人员更好地处理问题" />
+          <el-input v-model="reopenForm.reason" type="textarea" :rows="4" placeholder="请详细说明返工的原因，以便运维人员更好地处理问题" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="reopenDialogVisible = false">取消</el-button>
-        <el-button type="warning" @click="handleReopen" :loading="reopening">确认重开</el-button>
+        <el-button type="warning" @click="handleReopen" :loading="reopening">确认返工</el-button>
       </template>
     </el-dialog>
 
@@ -333,7 +333,7 @@ async function handleAccept(ticketId: number) {
   }
 }
 
-// 显示重开对话框
+// 显示返工对话框
 function showReopenDialog(ticketId: number) {
   const ticket = tickets.value.find(t => t.id === ticketId)
   currentTicketId.value = ticketId
@@ -342,10 +342,10 @@ function showReopenDialog(ticketId: number) {
   reopenDialogVisible.value = true
 }
 
-// 重开工单
+// 返工工单
 async function handleReopen() {
   if (!reopenForm.reason.trim()) {
-    ElMessage.warning('请填写重新打开的原因')
+    ElMessage.warning('请填写返工的原因')
     return
   }
   if (!currentTicketId.value) return
@@ -353,7 +353,7 @@ async function handleReopen() {
   reopening.value = true
   try {
     await reopenTicket(currentTicketId.value, reopenForm.reason)
-    ElMessage.success('工单已重新打开')
+    ElMessage.success('已申请返工')
     reopenDialogVisible.value = false
     await loadTickets()
   } finally {
