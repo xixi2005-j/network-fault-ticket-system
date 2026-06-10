@@ -98,7 +98,7 @@
                 </div>
               </div>
               <div class="ticket-actions">
-                <el-button type="success" size="small" @click="handleAccept(ticket.id)" :loading="acceptingId === ticket.id">
+                <el-button type="success" size="small" @click="confirmAccept(ticket.id)" :loading="acceptingId === ticket.id">
                   <el-icon><Check /></el-icon>验收
                 </el-button>
                 <el-button type="warning" size="small" plain @click="showReopenDialog(ticket.id)">
@@ -188,15 +188,18 @@
           <template #default="{ row }">{{ row.assigneeName || '未指派' }}</template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="170" />
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="$router.push(`/tickets/${row.id}`)">
               <el-icon><View /></el-icon>查看
             </el-button>
-            <el-button v-if="row.status === 4" link type="success" @click="handleAccept(row.id)" :loading="acceptingId === row.id">
+            <el-button v-if="row.status === 4" link type="success" @click="confirmAccept(row.id)" :loading="acceptingId === row.id">
               <el-icon><Check /></el-icon>验收
             </el-button>
-            <el-button v-if="row.status === 5 && !row.satisfaction" link type="warning" @click="showRatingDialog(row.id)">
+            <el-button v-if="row.status === 4 || row.status === 5" link type="warning" @click="showReopenDialog(row.id)">
+              <el-icon><RefreshLeft /></el-icon>返工
+            </el-button>
+            <el-button v-if="row.status === 5 && !row.satisfaction" link type="primary" @click="showRatingDialog(row.id)">
               <el-icon><Star /></el-icon>评价
             </el-button>
           </template>
@@ -243,7 +246,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTickets, acceptTicket, rateTicket, reopenTicket } from '@/api/ticket'
 import { useUserStore } from '@/stores/user'
 import type { TicketVO } from '@/types/api'
@@ -319,6 +322,22 @@ function updateStats() {
   stats.reviewing = tickets.value.filter(t => t.status === 3).length
   stats.completed = tickets.value.filter(t => t.status === 4).length
   stats.closed = tickets.value.filter(t => t.status === 5).length
+}
+
+// 确认验收
+function confirmAccept(ticketId: number) {
+  const ticket = tickets.value.find(t => t.id === ticketId)
+  ElMessageBox.confirm(
+    `确认验收工单「${ticket?.title || ''}」？验收后工单将变为已结束状态。`,
+    '确认验收',
+    {
+      confirmButtonText: '确认验收',
+      cancelButtonText: '取消',
+      type: 'success'
+    }
+  ).then(() => {
+    handleAccept(ticketId)
+  }).catch(() => {})
 }
 
 // 验收工单
