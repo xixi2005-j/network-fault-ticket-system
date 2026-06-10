@@ -15,6 +15,14 @@
           <el-icon><Plus /></el-icon>
           <span>创建工单</span>
         </el-menu-item>
+        <el-menu-item v-if="userStore.isAdmin" index="/admin/operations">
+          <el-icon><Setting /></el-icon>
+          <span>工单操作</span>
+        </el-menu-item>
+        <el-menu-item v-if="userStore.isOps" index="/ops/tasks">
+          <el-icon><List /></el-icon>
+          <span>工单任务</span>
+        </el-menu-item>
         <el-menu-item v-if="userStore.isAdmin" index="/admin/users">
           <el-icon><User /></el-icon>
           <span>用户管理</span>
@@ -62,6 +70,8 @@ const currentTitle = computed(() => {
     '/dashboard': '统计面板',
     '/tickets': '工单列表',
     '/tickets/create': '创建工单',
+    '/admin/operations': '工单操作',
+    '/ops/tasks': '工单任务',
     '/admin/users': '用户管理'
   }
   // 匹配路由
@@ -85,9 +95,17 @@ function handleCommand(command: string) {
 .layout {
   height: 100vh;
 }
+.layout > .el-container {
+  margin-left: 220px;
+}
 .aside {
   background: #304156;
   overflow-y: auto;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 100;
 }
 .logo {
   height: 60px;
@@ -131,6 +149,8 @@ function handleCommand(command: string) {
 }
 .main {
   background: #f0f2f5;
-  padding: 20px;
+  padding: 20px 20px 0;
+  overflow-y: auto;
+  height: 0;
 }
 </style>

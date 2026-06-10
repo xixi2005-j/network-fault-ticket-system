@@ -50,6 +50,18 @@ const router = createRouter({
           meta: { requiresAuth: true }
         },
         {
+          path: 'admin/operations',
+          name: 'TicketOperations',
+          component: () => import('@/views/TicketOperationsView.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true }
+        },
+        {
+          path: 'ops/tasks',
+          name: 'TicketTasks',
+          component: () => import('@/views/TicketTasksView.vue'),
+          meta: { requiresAuth: true, requiresOps: true }
+        },
+        {
           path: 'admin/users',
           name: 'UserManage',
           component: () => import('@/views/UserManageView.vue'),
@@ -70,6 +82,11 @@ router.beforeEach((to, _from, next) => {
   }
 
   if (to.meta.requiresAdmin && !userStore.isAdmin) {
+    next('/tickets')
+    return
+  }
+
+  if (to.meta.requiresOps && !userStore.isOps && !userStore.isAdmin) {
     next('/tickets')
     return
   }

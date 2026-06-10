@@ -1,13 +1,13 @@
 <template>
-  <div>
+  <div class="page-container">
     <!-- 筛选栏 -->
     <el-card shadow="never" class="filter-card">
       <el-form :inline="true" :model="query">
         <el-form-item label="关键词">
-          <el-input v-model="query.keyword" placeholder="搜索标题" clearable @keyup.enter="loadData" />
+          <el-input v-model="query.keyword" placeholder="请输入" clearable @keyup.enter="loadData" />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable>
+          <el-select v-model="query.status" placeholder="请选择" clearable>
             <el-option label="待处理" :value="1" />
             <el-option label="处理中" :value="2" />
             <el-option label="已完成" :value="3" />
@@ -15,7 +15,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="优先级">
-          <el-select v-model="query.priority" placeholder="全部" clearable>
+          <el-select v-model="query.priority" placeholder="请选择" clearable>
             <el-option label="紧急" :value="1" />
             <el-option label="高" :value="2" />
             <el-option label="中" :value="3" />
@@ -23,24 +23,27 @@
           </el-select>
         </el-form-item>
         <el-form-item label="分类">
-          <el-select v-model="query.category" placeholder="全部" clearable>
+          <el-select v-model="query.category" placeholder="请选择" clearable>
             <el-option label="网络故障" :value="1" />
             <el-option label="设备故障" :value="2" />
             <el-option label="服务异常" :value="3" />
             <el-option label="其他" :value="4" />
           </el-select>
         </el-form-item>
-        <el-form-item>
+        <el-form-item class="btn-group">
           <el-button type="primary" @click="loadData">查询</el-button>
           <el-button @click="resetQuery">重置</el-button>
+          <el-button type="success" @click="$router.push('/tickets/create')">新增</el-button>
         </el-form-item>
       </el-form>
     </el-card>
 
     <!-- 工单表格 -->
-    <el-card shadow="never" style="margin-top: 16px">
+    <el-card shadow="never" class="table-card">
       <el-table :data="tableData" v-loading="loading" stripe>
-        <el-table-column prop="id" label="ID" width="60" />
+        <el-table-column label="ID" width="70">
+          <template #default="{ row }">{{ String(row.id).padStart(3, '0') }}</template>
+        </el-table-column>
         <el-table-column prop="title" label="标题" min-width="200">
           <template #default="{ row }">
             <router-link :to="`/tickets/${row.id}`" class="link">{{ row.title }}</router-link>
@@ -64,19 +67,27 @@
         <el-table-column prop="createTime" label="创建时间" width="170" />
         <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="$router.push(`/tickets/${row.id}`)">查看</el-button>
-            <el-button link type="primary" size="small" @click="$router.push(`/tickets/${row.id}/edit`)">编辑</el-button>
-            <el-popconfirm title="确定删除？" @confirm="handleDelete(row.id)">
+            <el-button link type="primary" @click="$router.push(`/tickets/${row.id}`)">
+              <el-icon :size="18"><View /></el-icon>
+            </el-button>
+            <el-button link type="primary" :disabled="row.status === 4" @click="$router.push(`/tickets/${row.id}/edit`)">
+              <el-icon :size="18"><EditPen /></el-icon>
+            </el-button>
+            <el-popconfirm title="确定删除？" @confirm="handleDelete(row.id)" :disabled="row.status === 4">
               <template #reference>
-                <el-button link type="danger" size="small">删除</el-button>
+                <el-button link type="danger" :disabled="row.status === 4">
+                  <el-icon :size="18"><Delete /></el-icon>
+                </el-button>
               </template>
             </el-popconfirm>
           </template>
         </el-table-column>
       </el-table>
+    </el-card>
 
+    <!-- 分页区域 -->
+    <div class="pagination-wrapper">
       <el-pagination
-        style="margin-top: 16px; justify-content: flex-end"
         v-model:current-page="query.page"
         v-model:page-size="query.pageSize"
         :total="total"
@@ -85,7 +96,7 @@
         @size-change="loadData"
         @current-change="loadData"
       />
-    </el-card>
+    </div>
   </div>
 </template>
 
@@ -146,8 +157,67 @@ function statusType(s: number) {
 </script>
 
 <style scoped>
+.page-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.table-card {
+  flex: 1;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+}
+.table-card :deep(.el-card__body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+.table-card :deep(.el-table) {
+  flex: 1;
+}
+.table-card :deep(.el-table th.el-table__cell),
+.table-card :deep(.el-table td.el-table__cell) {
+  border-right: 1px solid #ebeef5;
+}
+.table-card :deep(.el-table th.el-table__cell:last-child),
+.table-card :deep(.el-table td.el-table__cell:last-child) {
+  border-right: none;
+}
+.table-card :deep(.el-table th.el-table__cell:nth-child(4)),
+.table-card :deep(.el-table th.el-table__cell:nth-child(5)),
+.table-card :deep(.el-table th.el-table__cell:nth-child(6)),
+.table-card :deep(.el-table th.el-table__cell:nth-child(9)) {
+  text-align: center;
+}
+.table-card :deep(.el-table td.el-table__cell:nth-child(4)),
+.table-card :deep(.el-table td.el-table__cell:nth-child(5)),
+.table-card :deep(.el-table td.el-table__cell:nth-child(6)),
+.table-card :deep(.el-table td.el-table__cell:nth-child(9)) {
+  text-align: center;
+}
 .filter-card :deep(.el-form-item) {
   margin-bottom: 0;
+}
+.filter-card :deep(.el-select) {
+  width: 140px;
+}
+.filter-card :deep(.el-select .el-input__inner) {
+  color: #333;
+}
+.btn-group {
+  margin-left: auto;
+}
+.btn-group :deep(.el-button) {
+  margin-left: 20px;
+}
+.btn-group :deep(.el-button:first-child) {
+  margin-left: 0;
 }
 .link {
   color: #409eff;
@@ -155,5 +225,30 @@ function statusType(s: number) {
 }
 .link:hover {
   text-decoration: underline;
+}
+.table-card :deep(.el-table .el-button) {
+  font-size: 18px;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.table-card :deep(.el-table .el-button:hover) {
+  background-color: #ecf5ff;
+}
+.table-card :deep(.el-table .el-button--danger:hover) {
+  background-color: #fef0f0;
+}
+.table-card :deep(.el-table .el-button.is-disabled) {
+  opacity: 0.4;
+}
+.pagination-wrapper {
+  background-color: #f0f2f5;
+  padding: 12px 24px;
+  border-top: 1px solid #dcdfe6;
+  display: flex;
+  justify-content: flex-end;
+  border-radius: 8px;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+  margin-top: 1px;
 }
 </style>

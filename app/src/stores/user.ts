@@ -3,9 +3,9 @@ import { ref, computed } from 'vue'
 import type { UserVO } from '@/types/api'
 
 export const useUserStore = defineStore('user', () => {
-  const token = ref<string>(localStorage.getItem('token') || '')
+  const token = ref<string>(sessionStorage.getItem('token') || '')
   const user = ref<UserVO | null>(
-    JSON.parse(localStorage.getItem('user') || 'null')
+    JSON.parse(sessionStorage.getItem('user') || 'null')
   )
 
   const isLoggedIn = computed(() => !!token.value)
@@ -23,19 +23,19 @@ export const useUserStore = defineStore('user', () => {
 
   function setToken(t: string) {
     token.value = t
-    localStorage.setItem('token', t)
+    sessionStorage.setItem('token', t)
   }
 
   function setUser(u: UserVO) {
     user.value = u
-    localStorage.setItem('user', JSON.stringify(u))
+    sessionStorage.setItem('user', JSON.stringify(u))
   }
 
   function logout() {
     token.value = ''
     user.value = null
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    sessionStorage.removeItem('token')
+    sessionStorage.removeItem('user')
   }
 
   return { token, user, isLoggedIn, isAdmin, isOps, isNormalUser, roleName, setToken, setUser, logout }
