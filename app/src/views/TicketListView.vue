@@ -164,84 +164,35 @@ function statusType(s: number) {
   display: flex;
   flex-direction: column;
 }
+
 .table-card {
-  flex: 1;
   margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  border-bottom: none;
-  border-radius: 4px 4px 0 0;
 }
-.table-card :deep(.el-card__body) {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding-bottom: 0;
-}
-.table-card :deep(.el-table) {
-  flex: 1;
-}
-.table-card :deep(.el-table th.el-table__cell),
-.table-card :deep(.el-table td.el-table__cell) {
-  border-right: 1px solid #ebeef5;
-}
-.table-card :deep(.el-table th.el-table__cell:last-child),
-.table-card :deep(.el-table td.el-table__cell:last-child) {
-  border-right: none;
-}
-.table-card :deep(.el-table th.el-table__cell:nth-child(4)),
-.table-card :deep(.el-table th.el-table__cell:nth-child(5)),
-.table-card :deep(.el-table th.el-table__cell:nth-child(6)),
-.table-card :deep(.el-table th.el-table__cell:nth-child(9)) {
-  text-align: center;
-}
-.table-card :deep(.el-table td.el-table__cell:nth-child(4)),
-.table-card :deep(.el-table td.el-table__cell:nth-child(5)),
-.table-card :deep(.el-table td.el-table__cell:nth-child(6)),
-.table-card :deep(.el-table td.el-table__cell:nth-child(9)) {
-  text-align: center;
-}
+
 .filter-card :deep(.el-form-item) {
   margin-bottom: 0;
 }
+
 .filter-card :deep(.el-select) {
   width: 140px;
 }
+
 .filter-card :deep(.el-select .el-input__inner) {
   color: #333;
 }
+
 .btn-group {
   margin-left: auto;
 }
+
 .btn-group :deep(.el-button) {
   margin-left: 20px;
 }
+
 .btn-group :deep(.el-button:first-child) {
   margin-left: 0;
 }
-.link {
-  color: #409eff;
-  text-decoration: none;
-}
-.link:hover {
-  text-decoration: underline;
-}
-.table-card :deep(.el-table .el-button) {
-  font-size: 18px;
-  padding: 8px;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-.table-card :deep(.el-table .el-button:hover) {
-  background-color: #ecf5ff;
-}
-.table-card :deep(.el-table .el-button--danger:hover) {
-  background-color: #fef0f0;
-}
-.table-card :deep(.el-table .el-button.is-disabled) {
-  opacity: 0.4;
-}
+
 .pagination-wrapper {
   background-color: #f0f2f5;
   padding: 12px 24px;
