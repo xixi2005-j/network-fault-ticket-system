@@ -71,12 +71,12 @@
             <el-button link type="primary" @click="$router.push(`/tickets/${row.id}`)">
               <el-icon :size="18"><View /></el-icon>
             </el-button>
-            <el-button link type="primary" :disabled="row.status >= 4" @click="$router.push(`/tickets/${row.id}/edit`)">
+            <el-button link type="primary" :disabled="!canOperate(row)" @click="$router.push(`/tickets/${row.id}/edit`)">
               <el-icon :size="18"><EditPen /></el-icon>
             </el-button>
-            <el-popconfirm title="确定删除？" @confirm="handleDelete(row.id)" :disabled="row.status >= 4">
+            <el-popconfirm title="确定删除？" @confirm="handleDelete(row.id)" :disabled="!canOperate(row)">
               <template #reference>
-                <el-button link type="danger" :disabled="row.status >= 4">
+                <el-button link type="danger" :disabled="!canOperate(row)">
                   <el-icon :size="18"><Delete /></el-icon>
                 </el-button>
               </template>
@@ -105,8 +105,10 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getTickets, deleteTicket } from '@/api/ticket'
+import { useUserStore } from '@/stores/user'
 import type { TicketVO } from '@/types/api'
 
+const userStore = useUserStore()
 const loading = ref(false)
 const tableData = ref<TicketVO[]>([])
 const total = ref(0)
@@ -146,6 +148,13 @@ async function handleDelete(id: number) {
   await deleteTicket(id)
   ElMessage.success('删除成功')
   loadData()
+}
+
+function canOperate(row: TicketVO) {
+  if (row.status >= 4) return false
+  if (userStore.isAdmin) return true
+  const userId = userStore.user?.id
+  return row.creatorId === userId || row.assigneeId === userId
 }
 
 function priorityType(p: number) {
