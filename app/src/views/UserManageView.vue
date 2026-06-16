@@ -37,15 +37,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getUsers, updateUserRole, updateUserStatus } from '@/api/user'
+import { notifyRefresh, onRefresh } from '@/utils/sync'
 import type { UserVO } from '@/types/api'
 
 const loading = ref(false)
 const users = ref<UserVO[]>([])
 
-onMounted(() => loadData())
+let cleanup: (() => void) | undefined
+
+onMounted(() => {
+  loadData()
+  cleanup = onRefresh(() => loadData())
+})
+
+onUnmounted(() => { cleanup?.() })
 
 async function loadData() {
   loading.value = true
@@ -60,10 +68,12 @@ async function loadData() {
 async function handleRoleChange(row: UserVO) {
   await updateUserRole(row.id, row.role)
   ElMessage.success('角色修改成功')
+  notifyRefresh()
 }
 
 async function handleStatusChange(row: UserVO) {
   await updateUserStatus(row.id, row.status)
   ElMessage.success(row.status === 1 ? '已启用' : '已禁用')
+  notifyRefresh()
 }
 </script>

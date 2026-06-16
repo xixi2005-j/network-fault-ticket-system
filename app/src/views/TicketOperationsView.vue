@@ -138,11 +138,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getTickets, assignTicket } from '@/api/ticket'
 import { getReportByTicketId, approveReport, rejectReport } from '@/api/report'
 import { getUsers } from '@/api/user'
+import { notifyRefresh, onRefresh } from '@/utils/sync'
 import type { TicketVO, UserVO, CompletionReportVO } from '@/types/api'
 
 const allTickets = ref<TicketVO[]>([])
@@ -156,6 +157,8 @@ const currentTicketId = ref<number | null>(null)
 const rejectReason = ref('')
 const reviewing = ref(false)
 
+let cleanup: (() => void) | undefined
+
 const pendingTickets = computed(() => allTickets.value.filter(t => t.status === 1))
 const processingTickets = computed(() => allTickets.value.filter(t => t.status === 2))
 const reviewingTickets = computed(() => allTickets.value.filter(t => t.status === 3))
@@ -164,7 +167,13 @@ const completedTickets = computed(() => allTickets.value.filter(t => t.status ==
 onMounted(async () => {
   await loadTickets()
   await loadOpsUsers()
+  cleanup = onRefresh(async () => {
+    await loadTickets()
+    await loadOpsUsers()
+  })
 })
+
+onUnmounted(() => { cleanup?.() })
 
 async function loadTickets() {
   const res = await getTickets({ page: 1, pageSize: 100 })
@@ -187,6 +196,7 @@ async function handleAssign(ticketId: number) {
     await assignTicket(ticketId, assigneeId)
     ElMessage.success('指派成功')
     await loadTickets()
+    notifyRefresh()
   } finally {
     assigningId.value = null
   }
@@ -211,6 +221,7 @@ async function handleApprove() {
     ElMessage.success('审核通过')
     reportDialogVisible.value = false
     await loadTickets()
+    notifyRefresh()
   } finally {
     reviewing.value = false
   }
@@ -229,6 +240,7 @@ async function handleReject() {
     reportDialogVisible.value = false
     rejectReason.value = ''
     await loadTickets()
+    notifyRefresh()
   } finally {
     reviewing.value = false
   }

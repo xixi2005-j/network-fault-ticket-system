@@ -93,11 +93,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getTickets, changeTicketStatus } from '@/api/ticket'
 import { submitReport } from '@/api/report'
 import { useUserStore } from '@/stores/user'
+import { notifyRefresh, onRefresh } from '@/utils/sync'
 import type { TicketVO } from '@/types/api'
 
 const userStore = useUserStore()
@@ -125,7 +126,14 @@ const filteredTasks = computed(() => {
   return tasks.value.filter(t => t.status === statusFilter.value)
 })
 
-onMounted(() => loadTasks())
+let cleanup: (() => void) | undefined
+
+onMounted(() => {
+  loadTasks()
+  cleanup = onRefresh(() => loadTasks())
+})
+
+onUnmounted(() => { cleanup?.() })
 
 async function loadTasks() {
   loading.value = true
@@ -143,6 +151,7 @@ async function handleComplete(id: number) {
     await changeTicketStatus(id, 3)
     ElMessage.success('已标记完成')
     await loadTasks()
+    notifyRefresh()
   } finally {
     completingId.value = null
   }
@@ -173,6 +182,7 @@ async function handleSubmitReport() {
     ElMessage.success('报告提交成功')
     reportDialogVisible.value = false
     await loadTasks()
+    notifyRefresh()
   } finally {
     submitting.value = false
   }

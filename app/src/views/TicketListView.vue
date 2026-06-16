@@ -102,10 +102,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getTickets, deleteTicket } from '@/api/ticket'
 import { useUserStore } from '@/stores/user'
+import { notifyRefresh, onRefresh } from '@/utils/sync'
 import type { TicketVO } from '@/types/api'
 
 const userStore = useUserStore()
@@ -122,7 +123,14 @@ const query = reactive({
   category: undefined as number | undefined
 })
 
-onMounted(() => loadData())
+let cleanup: (() => void) | undefined
+
+onMounted(() => {
+  loadData()
+  cleanup = onRefresh(() => loadData())
+})
+
+onUnmounted(() => { cleanup?.() })
 
 async function loadData() {
   loading.value = true
@@ -148,6 +156,7 @@ async function handleDelete(id: number) {
   await deleteTicket(id)
   ElMessage.success('删除成功')
   loadData()
+  notifyRefresh()
 }
 
 function canOperate(row: TicketVO) {

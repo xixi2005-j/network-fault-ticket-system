@@ -245,10 +245,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTickets, acceptTicket, rateTicket, reopenTicket } from '@/api/ticket'
 import { useUserStore } from '@/stores/user'
+import { notifyRefresh, onRefresh } from '@/utils/sync'
 import type { TicketVO } from '@/types/api'
 
 const userStore = useUserStore()
@@ -284,6 +285,8 @@ const ratingForm = reactive({
   comment: ''
 })
 
+let cleanup: (() => void) | undefined
+
 // 待验收的工单
 const pendingAcceptTickets = computed(() => {
   return tickets.value.filter(t => t.status === 4)
@@ -302,7 +305,10 @@ const filteredTickets = computed(() => {
 
 onMounted(() => {
   loadTickets()
+  cleanup = onRefresh(() => loadTickets())
 })
+
+onUnmounted(() => { cleanup?.() })
 
 async function loadTickets() {
   loading.value = true
@@ -347,6 +353,7 @@ async function handleAccept(ticketId: number) {
     await acceptTicket(ticketId)
     ElMessage.success('验收成功')
     await loadTickets()
+    notifyRefresh()
   } finally {
     acceptingId.value = null
   }
@@ -375,6 +382,7 @@ async function handleReopen() {
     ElMessage.success('已申请返工')
     reopenDialogVisible.value = false
     await loadTickets()
+    notifyRefresh()
   } finally {
     reopening.value = false
   }
@@ -400,6 +408,7 @@ async function handleRate() {
     ElMessage.success('评价成功，感谢您的反馈')
     ratingDialogVisible.value = false
     await loadTickets()
+    notifyRefresh()
   } finally {
     ratinging.value = false
   }
